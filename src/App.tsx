@@ -1,3 +1,4 @@
+import React from "react";
 import "./App.css";
 import { appContainer, board, buttons } from "./App.css.ts";
 
