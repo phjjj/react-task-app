@@ -10,7 +10,11 @@ const initialState: loggerState = {
 const loggerSlice = createSlice({
   name: "logger",
   initialState,
-  reducers: {},
+  reducers: {
+    addLog: (state, { payload }) => {
+      state.logArray.push(payload);
+    },
+  },
 });
-
+export const { addLog } = loggerSlice.actions;
 export const loggerReducer = loggerSlice.reducer;
