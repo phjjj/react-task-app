@@ -12,6 +12,10 @@ type TaddBoardAction = {
 
 type TdeleteBoardAction = {
   boardId: string;
+};
+
+type TdeleteListAction = {
+  boardId: string;
   listId: string;
 };
 
@@ -26,6 +30,20 @@ type TaddTaskAction = {
   task: ITask;
 };
 
+type TDeleteTaskAction = {
+  boardId: string;
+  listId: string;
+  taskId: string;
+};
+
+type TSortAction = {
+  boardIndex: number;
+  droppableIdStart: string;
+  droppableIdEnd: string;
+  droppableIndexStart: number;
+  droppableIndexEnd: number;
+  draggableId: string;
+};
 const initialState: TBoardsState = {
   modalActive: false,
   boardArray: [
@@ -66,6 +84,9 @@ const boardSlice = createSlice({
     // 그 board의 lists를 filter를 통해 listId가 payload.listId와 같은 리스트를 제외한 나머지 리스트들만 남깁니다.
     // 그리고 나서 board의 lists를 payload로 업데이트합니다.
     // 이렇게 하면 리스트를 삭제할 수 있습니다.
+    deleteBoard: (state, { payload }: PayloadAction<TdeleteBoardAction>) => {
+      state.boardArray = state.boardArray.filter((board) => board.boardId !== payload.boardId);
+    },
     addList: (state, { payload }: PayloadAction<TaddListAction>) => {
       state.boardArray.map((board) =>
         board.boardId === payload.boardId ? { ...board, lists: board.lists.push(payload.list) } : board
@@ -88,7 +109,50 @@ const boardSlice = createSlice({
           : board
       );
     },
-    deleteList: (state, { payload }: PayloadAction<TdeleteBoardAction>) => {
+    updateTask: (state, { payload }: PayloadAction<TaddTaskAction>) => {
+      state.boardArray = state.boardArray.map((board) =>
+        board.boardId === payload.boardId
+          ? {
+              ...board,
+              lists: board.lists.map((list) =>
+                list.listId === payload.listId
+                  ? {
+                      ...list,
+                      tasks: list.tasks.map((task) =>
+                        task.taskId === payload.task.taskId
+                          ? {
+                              ...task,
+                              taskName: payload.task.taskName,
+                              taskDescription: payload.task.taskDescription,
+                              taskOwner: payload.task.taskOwner,
+                            }
+                          : task
+                      ),
+                    }
+                  : list
+              ),
+            }
+          : board
+      );
+    },
+    deleteTask: (state, { payload }: PayloadAction<TDeleteTaskAction>) => {
+      state.boardArray = state.boardArray.map((board) =>
+        board.boardId === payload.boardId
+          ? {
+              ...board,
+              lists: board.lists.map((list) =>
+                list.listId === payload.listId
+                  ? {
+                      ...list,
+                      tasks: list.tasks.filter((task) => task.taskId !== payload.taskId),
+                    }
+                  : list
+              ),
+            }
+          : board
+      );
+    },
+    deleteList: (state, { payload }: PayloadAction<TdeleteListAction>) => {
       state.boardArray = state.boardArray.map((board) =>
         board.boardId === payload.boardId
           ? {
@@ -101,9 +165,36 @@ const boardSlice = createSlice({
     setModalActive: (state, { payload }: PayloadAction<boolean>) => {
       state.modalActive = payload;
     },
+    sort: (state, { payload }: PayloadAction<TSortAction>) => {
+      // same list
+      if (payload.droppableIdStart === payload.droppableIdEnd) {
+        const list = state.boardArray[payload.boardIndex].lists.find(
+          (list) => list.listId === payload.droppableIdStart
+        );
+        // splice를 통해 해당 리스트에서 해당 task를 제거합니다.
+        // 그리고 나서 destination.index로 해당 task를 다시 추가합니다.
+        // 이렇게 하면 task의 순서를 바꿀 수 있습니다.
+        const card = list?.tasks.splice(payload.droppableIndexStart, 1);
+        list?.tasks.splice(payload.droppableIndexEnd, 0, ...card!);
+      }
+
+      if (payload.droppableIdStart !== payload.droppableIdEnd) {
+        // moving to other list
+        const listStart = state.boardArray[payload.boardIndex].lists.find(
+          (list) => list.listId === payload.droppableIdStart
+        );
+        const card = listStart?.tasks.splice(payload.droppableIndexStart, 1);
+
+        const listEnd = state.boardArray[payload.boardIndex].lists.find(
+          (list) => list.listId === payload.droppableIdEnd
+        );
+        listEnd?.tasks.splice(payload.droppableIndexEnd, 0, ...card!);
+      }
+    },
   },
 });
 
 // action creator를 내보냅니다.
-export const { addList, addTask, addBoard, deleteList, setModalActive } = boardSlice.actions;
+export const { addList, deleteBoard, addTask, addBoard, deleteList, setModalActive, updateTask, deleteTask, sort } =
+  boardSlice.actions;
 export const boardReducer = boardSlice.reducer;

@@ -7,9 +7,10 @@ export interface ITask {
 
 export interface ILogItem {
   logId: string;
-  logauthor: string;
-  logname: string;
-  logtimestamp: string;
+  logAuthor: string;
+  logName: string;
+  logTimestamp: string;
+  logMessage: string;
 }
 
 export interface IBoard {
